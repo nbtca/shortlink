@@ -43,6 +43,9 @@ export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
 		const { pathname } = url;
+		if (!env.SHORT_LINK) {
+			return new Response('please add "SHORT_LINK" kv namespace in "Worker > Settings > Variables  KV Namespace Bindings"');
+		}
 		if (url.pathname.startsWith('/api/')) {
 			if (!env.TOKEN) {
 				return new Response('please add "TOKEN" in "Worker > Settings > Variables"');
@@ -61,6 +64,9 @@ export default {
 			return apiRouter.handle(request, env);
 		}
 		let path = pathname.slice(1);
+		if (!path) {
+			return new Response('Please provide a path to redirect', { status: 400 });
+		}
 		const redirectURL = await env.SHORT_LINK.get(path);
 		if (!redirectURL) {
 			return new Response(`There is no defined URL for the path: '${path}', sorry :(`);
