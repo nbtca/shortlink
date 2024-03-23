@@ -1,22 +1,33 @@
-// import { Router } from 'itty-router';
-
-// // now let's create a router (note the lack of "new")
-// const router = Router();
-
-// // GET collection index
-// router.get('/api/todos', () => new Response('Todos Index!'));
-
-// // GET item
-// router.get('/api/todos/:id', ({ params }) => new Response(`Todo #${params.id}`));
-
-// // POST to the collection (we'll use async here)
-// router.post('/api/todos', async (request) => {
-// 	const content = await request.json();
-
-// 	return new Response('Creating Todo: ' + JSON.stringify(content));
-// });
-
-// // 404 for everything else
-// router.all('*', () => new Response('Not Found.', { status: 404 }));
-
-// export default router;
+import { Router } from 'itty-router';
+const router = Router({
+	base: '/api',
+});
+router.post('/shorten', async (req, env: Env) => {
+	const { url, path: shorten } = req.json() as {
+		url: string;
+		path?: string;
+	};
+	let shortenKey = shorten || Math.random().toString(36).slice(2, 8);
+	await env.SHORT_LINK.put(shortenKey, url);
+	const result = {
+		original: url,
+		url: `${new URL(req.url).origin}/${shortenKey}`,
+	};
+	return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+});
+router.get('/link/:path', async ({ params }, env: Env) => {
+	const { path } = params;
+	const data = await env.SHORT_LINK.getWithMetadata(path);
+	const result = {
+		exists: data.value !== null,
+		path,
+		url: data,
+	};
+	return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+});
+router.get('/links', async (_, env: Env) => {
+	const list = await env.SHORT_LINK.list();
+	return new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } });
+});
+router.all('*', () => new Response('Not Found.', { status: 404 }));
+export default router;

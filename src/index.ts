@@ -10,8 +10,6 @@
 
 // // import handleProxy from './proxy';
 // // import handleRedirect from './redirect';
-// import apiRouter from './router';
-
 // // Export a default object containing event handlers
 // export default {
 // 	// The fetch handler is invoked when this worker receives a HTTP(S) request
@@ -23,16 +21,13 @@
 // 		// switch (url.pathname) {
 // 		// 	case '/redirect':
 // 		// 		return handleRedirect.fetch(request, env, ctx);
-
 // 		// 	case '/proxy':
 // 		// 		return handleProxy.fetch(request, env, ctx);
 // 		// }
-
 // 		if (url.pathname.startsWith('/api/')) {
 // 			// You can also use more robust routing
 // 			return apiRouter.handle(request);
 // 		}
-
 // 		return new Response(
 // 			`Try making requests to:
 //       <ul>
@@ -43,8 +38,33 @@
 // 		);
 // 	},
 // };
+import apiRouter from './router';
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-		return new Response('Hello World!');
+		const url = new URL(request.url);
+		const { pathname } = url;
+		if (url.pathname.startsWith('/api/')) {
+			if (!env.TOKEN) {
+				return new Response('please add "TOKEN" in "Worker > Settings > Variables"');
+			}
+			if (!request.headers.has('Authorization')) {
+				return new Response('Authorization header is missing', { status: 401 });
+			}
+			const Authorization = request.headers.get('Authorization');
+			if (!Authorization?.startsWith('Bearer ')) {
+				return new Response('Authorization header is invalid. Only allow Bearer.', { status: 401 });
+			}
+			const token = Authorization.substring(7).trim();
+			if (token !== env.TOKEN) {
+				return new Response('Unauthorized', { status: 403 });
+			}
+			return apiRouter.handle(request, env);
+		}
+		let path = pathname.slice(1);
+		const redirectURL = await env.SHORT_LINK.get(path);
+		if (!redirectURL) {
+			return new Response(`There is no defined URL for the path: '${path}', sorry :(`);
+		}
+		return Response.redirect(redirectURL, 301);
 	},
 };
