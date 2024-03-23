@@ -1,9 +1,9 @@
-import { Router } from 'itty-router';
+import { IRequest, Router } from 'itty-router';
 const router = Router({
 	base: '/api',
 });
-router.post('/shorten', async (req, env: Env) => {
-	const { url, path: shorten } = req.json() as {
+router.post('/shorten', async (req: IRequest, env: Env) => {
+	const { url, path: shorten } = (await req.json()) as {
 		url: string;
 		path?: string;
 	};
