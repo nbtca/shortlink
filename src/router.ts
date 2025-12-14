@@ -35,29 +35,16 @@ router.get('/links', async (req: IRequest, env: Env) => {
 	const list = await env.SHORT_LINK.list();
 	const origin = new URL(req.url).origin;
 
-	// Batch KV requests to avoid hitting concurrent request limits
-	const BATCH_SIZE = 50;
-	const linksWithDetails = [];
-
-	for (let i = 0; i < list.keys.length; i += BATCH_SIZE) {
-		const batch = list.keys.slice(i, i + BATCH_SIZE);
-		const batchResults = await Promise.all(
-			batch.map(async (item) => {
-				const value = await env.SHORT_LINK.get(item.name);
-				return {
-					path: item.name,
-					destination: value,
-					shortUrl: `${origin}/${item.name}`,
-					metadata: item.metadata,
-				};
-			})
-		);
-		linksWithDetails.push(...batchResults);
-	}
+	// Return just the list of link paths with short URLs
+	const links = list.keys.map((item) => ({
+		path: item.name,
+		shortUrl: `${origin}/${item.name}`,
+		metadata: item.metadata,
+	}));
 
 	return new Response(JSON.stringify({
-		links: linksWithDetails,
-		count: linksWithDetails.length
+		links: links,
+		count: links.length
 	}), {
 		headers: { 'Content-Type': 'application/json' }
 	});
