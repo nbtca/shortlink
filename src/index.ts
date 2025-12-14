@@ -39,30 +39,58 @@
 // 	},
 // };
 import apiRouter from './router';
+import { adminHTML } from './admin-ui';
+
+function isAuthenticated(request: Request, env: Env): boolean {
+	// Check for Cloudflare Access JWT header (primary authentication method)
+	const cfAccessJwt = request.headers.get('Cf-Access-Jwt-Assertion');
+	if (cfAccessJwt) {
+		// If Cloudflare Access JWT is present, user is authenticated by Cloudflare Access
+		return true;
+	}
+
+	// Fallback to Bearer token for API-only access (e.g., scripts, CI/CD)
+	if (env.TOKEN) {
+		const authorization = request.headers.get('Authorization');
+		if (authorization?.startsWith('Bearer ')) {
+			const token = authorization.substring(7).trim();
+			if (token === env.TOKEN) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 export default {
 	async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 		const url = new URL(request.url);
 		const { pathname } = url;
+
 		if (!env.SHORT_LINK) {
 			return new Response('please add "SHORT_LINK" kv namespace in "Worker > Settings > Variables  KV Namespace Bindings"');
 		}
-		if (url.pathname.startsWith('/api/')) {
-			if (!env.TOKEN) {
-				return new Response('please add "TOKEN" in "Worker > Settings > Variables"');
+
+		// Serve admin UI at /admin
+		if (pathname === '/admin' || pathname === '/admin/') {
+			if (!isAuthenticated(request, env)) {
+				return new Response('Unauthorized. Please configure Cloudflare Access.', { status: 401 });
 			}
-			if (!request.headers.has('Authorization')) {
-				return new Response('Authorization header is missing', { status: 401 });
-			}
-			const Authorization = request.headers.get('Authorization');
-			if (!Authorization?.startsWith('Bearer ')) {
-				return new Response('Authorization header is invalid. Only allow Bearer.', { status: 401 });
-			}
-			const token = Authorization.substring(7).trim();
-			if (token !== env.TOKEN) {
-				return new Response('Unauthorized', { status: 403 });
+			return new Response(adminHTML, {
+				headers: { 'Content-Type': 'text/html' },
+			});
+		}
+
+		// Protect API endpoints
+		if (pathname.startsWith('/api/')) {
+			if (!isAuthenticated(request, env)) {
+				return new Response('Unauthorized. Please authenticate via Cloudflare Access or provide a valid Bearer token.', { status: 401 });
 			}
 			return apiRouter.handle(request, env);
 		}
+
+		// Public short link redirects
 		let path = pathname.slice(1);
 		if (!path) {
 			return new Response('Please provide a path to redirect', { status: 400 });
