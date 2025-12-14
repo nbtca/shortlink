@@ -12,7 +12,7 @@ export const adminHTML = `<!DOCTYPE html>
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             min-height: 100vh;
             padding: 20px;
         }
@@ -21,11 +21,10 @@ export const adminHTML = `<!DOCTYPE html>
             margin: 0 auto;
         }
         h1 {
-            color: white;
+            color: #333;
             margin-bottom: 30px;
             text-align: center;
             font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
         .card {
             background: white;
@@ -53,10 +52,10 @@ export const adminHTML = `<!DOCTYPE html>
         }
         input[type="text"]:focus, input[type="url"]:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #007bff;
         }
         button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #007bff;
             color: white;
             border: none;
             padding: 12px 30px;
@@ -64,11 +63,12 @@ export const adminHTML = `<!DOCTYPE html>
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
         }
         button:hover {
+            background: #0056b3;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.3);
         }
         button:active {
             transform: translateY(0);
@@ -94,7 +94,7 @@ export const adminHTML = `<!DOCTYPE html>
             background: #f9f9f9;
         }
         .link-url {
-            color: #667eea;
+            color: #007bff;
             text-decoration: none;
             font-weight: 500;
         }
@@ -202,7 +202,7 @@ export const adminHTML = `<!DOCTYPE html>
             try {
                 const data = await apiRequest('/links');
 
-                if (!data.keys || data.keys.length === 0) {
+                if (!data.links || data.links.length === 0) {
                     container.innerHTML = '<div class="empty-state">No short links created yet.</div>';
                     return;
                 }
@@ -227,20 +227,18 @@ export const adminHTML = `<!DOCTYPE html>
 
                 const tbody = document.getElementById('linksTableBody');
 
-                for (const item of data.keys) {
-                    const linkInfo = await apiRequest(\`/link/\${item.name}\`);
+                for (const link of data.links) {
                     const row = document.createElement('tr');
-                    const shortUrl = \`\${window.location.origin}/\${item.name}\`;
 
                     row.innerHTML = \`
-                        <td><strong>\${item.name}</strong></td>
+                        <td><strong>\${link.path}</strong></td>
                         <td>
-                            <a href="\${shortUrl}" target="_blank" class="link-url">\${shortUrl}</a>
-                            <button class="copy-btn" onclick="copyToClipboard('\${shortUrl}')">Copy</button>
+                            <a href="\${link.shortUrl}" target="_blank" class="link-url">\${link.shortUrl}</a>
+                            <button class="copy-btn" onclick="copyToClipboard('\${link.shortUrl}')">Copy</button>
                         </td>
-                        <td>\${linkInfo.url.value || 'N/A'}</td>
+                        <td>\${link.destination || 'N/A'}</td>
                         <td>
-                            <a href="\${shortUrl}" target="_blank">
+                            <a href="\${link.shortUrl}" target="_blank">
                                 <button>Visit</button>
                             </a>
                         </td>
