@@ -35,22 +35,16 @@ router.get('/links', async (req: IRequest, env: Env) => {
 	const list = await env.SHORT_LINK.list();
 	const origin = new URL(req.url).origin;
 
-	// Fetch full details for each link
-	const linksWithDetails = await Promise.all(
-		list.keys.map(async (item) => {
-			const value = await env.SHORT_LINK.get(item.name);
-			return {
-				path: item.name,
-				destination: value,
-				shortUrl: `${origin}/${item.name}`,
-				metadata: item.metadata,
-			};
-		})
-	);
+	// Return just the list of link paths with short URLs
+	const links = list.keys.map((item) => ({
+		path: item.name,
+		shortUrl: `${origin}/${item.name}`,
+		metadata: item.metadata,
+	}));
 
 	return new Response(JSON.stringify({
-		links: linksWithDetails,
-		count: linksWithDetails.length
+		links: links,
+		count: links.length
 	}), {
 		headers: { 'Content-Type': 'application/json' }
 	});

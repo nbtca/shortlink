@@ -136,6 +136,19 @@ export const adminHTML = `<!DOCTYPE html>
         .copy-btn:hover {
             background: #218838;
         }
+        .details-btn {
+            background: #6c757d;
+            padding: 6px 12px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .details-btn:hover {
+            background: #5a6268;
+        }
+        .destination-cell {
+            color: #666;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -195,6 +208,32 @@ export const adminHTML = `<!DOCTYPE html>
             }, 5000);
         }
 
+        async function loadLinkDetails(path, rowElement) {
+            const destCell = rowElement.querySelector('.destination-cell');
+            const detailsBtn = rowElement.querySelector('.details-btn');
+
+            if (destCell.textContent !== 'Click "Details" to load') {
+                // Already loaded, toggle visibility
+                const currentDisplay = destCell.style.display || 'table-cell';
+                destCell.style.display = currentDisplay === 'none' ? 'table-cell' : 'none';
+                detailsBtn.textContent = destCell.style.display === 'none' ? 'Details' : 'Hide';
+                return;
+            }
+
+            destCell.innerHTML = '<em>Loading...</em>';
+            detailsBtn.disabled = true;
+
+            try {
+                const linkInfo = await apiRequest(\`/link/\${path}\`);
+                destCell.textContent = linkInfo.url.value || 'N/A';
+                detailsBtn.textContent = 'Hide';
+                detailsBtn.disabled = false;
+            } catch (error) {
+                destCell.innerHTML = \`<span style="color: red;">Error: \${error.message}</span>\`;
+                detailsBtn.disabled = false;
+            }
+        }
+
         async function loadLinks() {
             const container = document.getElementById('linksContainer');
             container.innerHTML = '<div class="loading">Loading links...</div>';
@@ -236,8 +275,9 @@ export const adminHTML = `<!DOCTYPE html>
                             <a href="\${link.shortUrl}" target="_blank" class="link-url">\${link.shortUrl}</a>
                             <button class="copy-btn" onclick="copyToClipboard('\${link.shortUrl}')">Copy</button>
                         </td>
-                        <td>\${link.destination || 'N/A'}</td>
+                        <td class="destination-cell">Click "Details" to load</td>
                         <td>
+                            <button class="details-btn" onclick="loadLinkDetails('\${link.path}', this.parentElement.parentElement)">Details</button>
                             <a href="\${link.shortUrl}" target="_blank">
                                 <button>Visit</button>
                             </a>
@@ -249,6 +289,9 @@ export const adminHTML = `<!DOCTYPE html>
                 container.innerHTML = \`<div class="error">Error loading links: \${error.message}</div>\`;
             }
         }
+
+        // Make loadLinkDetails available globally
+        window.loadLinkDetails = loadLinkDetails;
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
