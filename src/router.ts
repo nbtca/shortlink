@@ -17,6 +17,12 @@ router.post('/shorten', async (req: IRequest, env: Env) => {
 });
 router.get('/link/:path', async ({ params }, env: Env) => {
 	const { path } = params;
+	if (!path || path.trim() === '') {
+		return new Response(JSON.stringify({ error: 'Path parameter is required' }), {
+			status: 400,
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
 	const data = await env.SHORT_LINK.getWithMetadata(path);
 	const result = {
 		exists: data.value !== null,
@@ -25,9 +31,29 @@ router.get('/link/:path', async ({ params }, env: Env) => {
 	};
 	return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
 });
-router.get('/links', async (_, env: Env) => {
+router.get('/links', async (req: IRequest, env: Env) => {
 	const list = await env.SHORT_LINK.list();
-	return new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } });
+	const origin = new URL(req.url).origin;
+
+	// Fetch full details for each link
+	const linksWithDetails = await Promise.all(
+		list.keys.map(async (item) => {
+			const value = await env.SHORT_LINK.get(item.name);
+			return {
+				path: item.name,
+				destination: value,
+				shortUrl: `${origin}/${item.name}`,
+				metadata: item.metadata,
+			};
+		})
+	);
+
+	return new Response(JSON.stringify({
+		links: linksWithDetails,
+		count: linksWithDetails.length
+	}), {
+		headers: { 'Content-Type': 'application/json' }
+	});
 });
 router.all('*', () => new Response('Not Found.', { status: 404 }));
 export default router;
