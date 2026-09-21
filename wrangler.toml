@@ -1,12 +1,16 @@
 name = "short-link"
 main = "src/index.ts"
 compatibility_date = "2024-03-20"
+# The workers.dev URL bypasses Cloudflare Access; only link.nbtca.space may serve the worker.
+workers_dev = false
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-# [vars]
-# MY_VARIABLE = "production_value"
+[vars]
+ACCESS_TEAM_DOMAIN = "https://nbtca.cloudflareaccess.com"
+# Application Audience (AUD) tag of the "shortlink" Access application.
+ACCESS_AUD = "830c1fb7f1436058ede8edea447bcbddfb42e0b6742e9c845de9fd3ef99e6d13"
 
 # Bind the Workers AI model catalog. Run machine learning models, powered by serverless GPUs, on Cloudflare’s global network
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#workers-ai

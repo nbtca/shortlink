@@ -1,5 +1,7 @@
 interface Env {
 	TOKEN: string;
+	ACCESS_TEAM_DOMAIN: string;
+	ACCESS_AUD: string;
 	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
 	SHORT_LINK: KVNamespace;
 	//
