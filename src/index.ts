@@ -40,12 +40,12 @@
 // };
 import apiRouter from './router';
 import { adminHTML } from './admin-ui';
+import { verifyAccessJwt } from './access';
 
-function isAuthenticated(request: Request, env: Env): boolean {
-	// Check for Cloudflare Access JWT header (primary authentication method)
+async function isAuthenticated(request: Request, env: Env): Promise<boolean> {
+	// Anyone can send this header, so it counts only with a valid signature.
 	const cfAccessJwt = request.headers.get('Cf-Access-Jwt-Assertion');
-	if (cfAccessJwt) {
-		// If Cloudflare Access JWT is present, user is authenticated by Cloudflare Access
+	if (cfAccessJwt && (await verifyAccessJwt(cfAccessJwt, env.ACCESS_TEAM_DOMAIN, env.ACCESS_AUD))) {
 		return true;
 	}
 
@@ -74,7 +74,7 @@ export default {
 
 		// Serve admin UI at /admin
 		if (pathname === '/admin' || pathname === '/admin/') {
-			if (!isAuthenticated(request, env)) {
+			if (!(await isAuthenticated(request, env))) {
 				return new Response('Unauthorized. Please configure Cloudflare Access.', { status: 401 });
 			}
 			return new Response(adminHTML, {
@@ -84,7 +84,7 @@ export default {
 
 		// Protect API endpoints
 		if (pathname.startsWith('/api/')) {
-			if (!isAuthenticated(request, env)) {
+			if (!(await isAuthenticated(request, env))) {
 				return new Response('Unauthorized. Please authenticate via Cloudflare Access or provide a valid Bearer token.', { status: 401 });
 			}
 			return apiRouter.handle(request, env);
