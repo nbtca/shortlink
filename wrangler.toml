@@ -64,7 +64,6 @@ ACCESS_AUD = "830c1fb7f1436058ede8edea447bcbddfb42e0b6742e9c845de9fd3ef99e6d13"
 [[kv_namespaces]]
 binding = "SHORT_LINK"
 id = "e9c7861110ec4ed299fb775d13101365"
-preview_id = "15096aa7a11f495c93f8e10ba61c62ec"
 
 # Bind an mTLS certificate. Use to present a client certificate when communicating with another service.
 # Docs: https://developers.cloudflare.com/workers/wrangler/configuration/#mtls-certificates
